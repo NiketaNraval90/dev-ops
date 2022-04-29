@@ -1,0 +1,62 @@
+version: "3.9"
+networks:
+    dev:
+      driver: bridge
+      ipam:
+          config:
+              -   subnet: 10.8.0.0/16
+                  gateway: 10.8.0.1
+volumes:
+    jenkins:
+    git-data:
+services:
+    git:
+        domainname: dev
+        hostname: git
+        build: ./git
+        image: localhost/git:local
+        container_name: git
+        volumes:
+            - git-data:/var/www/git
+        networks:
+            dev:
+                ipv4_address: 10.8.0.2
+    php:
+        domainname: dev
+        hostname: php
+        build: ./php-fpm
+        image: localhost/php:local
+        # network_mode: host
+        tty: true
+        container_name: php
+        volumes:  
+            - ./app:/opt
+        networks:
+            dev:
+                ipv4_address: 10.8.0.3
+    jenkins:
+        domainname: dev
+        hostname: jenkins
+        # ports:
+        #     - '8080:8080'
+        #     - '50000:50000'
+        volumes:
+            - jenkins:/var/jenkins_home
+            - ./git-server/keys:/var/jenkins_home/.ssh
+        image: jenkins/jenkins
+        container_name: jenkins
+        links:
+            - git
+            - sonarqube
+        networks:
+            dev:
+                ipv4_address: 10.8.0.4
+    sonarqube:
+        domainname: dev
+        hostname: sonarqube
+        image: sonarqube
+        container_name: sonarqube
+        # network_mode: host
+        networks:
+            dev:
+                ipv4_address: 10.8.0.5
